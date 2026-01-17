@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// --- 1. USER MANAGEMENT ---
+model User {
+  id       String  @id @default(cuid())
+  username String  @unique
+  password String
+  role     Role
+  email    String? @unique
+
+  // Profiles
+  student Student?
+  teacher Teacher?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- 2. ACADEMIC HIERARCHY ---
+model Class {
+  id           String   @id @default(cuid())
+  name         String // e.g. "Grade 10"
+  capacity     Int
+  supervisorId String?
+  supervisor   Teacher? @relation("ClassSupervisor", fields: [supervisorId], references: [id])
+
+  students      Student[]
+  subjects      Subject[] // Subjects taught in this class
+  events        Event[]
+  feeStructures FeeStructure[]
+}
+
+model Subject {
+  id       String    @id @default(cuid())
+  name     String // e.g. "Mathematics"
+  code     String?
+  classes  Class[] // Subjects are assigned to classes
+  teachers Teacher[] // Teachers assigned to subjects
+  results  Result[]
+}
+
+model Teacher {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Personal Details
+  teacherId String   @unique // Teacher ID - T-<teacherId>
+  fullName  String
+  dob       DateTime
+  gender    Gender
+  imageURL  String?
+
+  // Contact Details
+  contactNo String?
+  address   String?
+
+  // Professional Details
+  qualification String?
+  experience    String?
+
+  subjects        Subject[]
+  supervisedClass Class[]             @relation("ClassSupervisor")
+  attendance      TeacherAttendance[]
+}
+
+model Student {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id])
+
+  // Personal Details
+  rollNo        String // Student ID - S-<rollNo>
+  admissionNo   String   @unique // Admission Number - ADM-<admissionNo>
+  admissionDate DateTime
+  fullName      String
+  dob           DateTime
+  gender        Gender
+  imageURL      String?
+
+  // Contact Details
+  contactNo String?
+  address   String?
+
+  // Guardian Details
+  fatherName        String?
+  fatherContactNo   String?
+  motherName        String?
+  motherContactNo   String?
+  guardianName      String?
+  guardianRelation  String?
+  guardianContactNo String?
+
+  account    StudentAccount?
+  attendance StudentAttendance[]
+  results    Result[]
+}
+
+// --- 3. FINANCIAL LEDGER (Double-Entry Lite) ---
+model FeeHead {
+  id          String         @id @default(cuid())
+  name        String // "Tuition", "Library", "Exam"
+  description String?
+  structures  FeeStructure[]
+}
+
+model FeeStructure {
+  id        String  @id @default(cuid())
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
+  feeHeadId String
+  feeHead   FeeHead @relation(fields: [feeHeadId], references: [id])
+  amount    Float
+  dueDate   String? // e.g. "5th of month"
+}
+
+model StudentAccount {
+  id           String        @id @default(cuid())
+  studentId    String        @unique
+  student      Student       @relation(fields: [studentId], references: [id])
+  balance      Float         @default(0) // Cached running balance
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  accountId   String
+  account     StudentAccount  @relation(fields: [accountId], references: [id])
+  amount      Float
+  type        TransactionType
+  description String?
+  date        DateTime        @default(now())
+}
+
+enum TransactionType {
+  DEBIT // Fee Due (+)
+  CREDIT // Fee Paid (-)
+}
+
+model Expense {
+  id       String   @id @default(cuid())
+  title    String
+  amount   Float
+  category String // Dynamic string or relation
+  date     DateTime @default(now())
+}
+
+// --- 4. ACADEMIC & ATTENDANCE ---
+model StudentAttendance {
+  id        String           @id @default(cuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id])
+  date      DateTime
+  status    AttendanceStatus
+}
+
+model TeacherAttendance {
+  id        String           @id @default(cuid())
+  teacherId String
+  teacher   Teacher          @relation(fields: [teacherId], references: [id])
+  date      DateTime
+  status    AttendanceStatus
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model Result {
+  id        String  @id @default(cuid())
+  examName  String // "Midterm 2025"
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  marks     Float
+  total     Float
+  grade     String? // Dynamic "A", "B"
+}
+
+model Event {
+  id      String   @id @default(cuid())
+  title   String
+  date    DateTime
+  classId String?
+  class   Class?   @relation(fields: [classId], references: [id])
+}
