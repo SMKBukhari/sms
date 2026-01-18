@@ -26,6 +26,33 @@ enum Gender {
   OTHER
 }
 
+enum NotificationType {
+  General
+  Task
+  Event
+  Announcement
+  ProfileUpdate
+  UserCreation
+  StudentCreation
+  TeacherCreation
+  Verification
+  RoleChange
+  Alert
+  Achievement
+  Reminder
+  Reward
+  Security
+  Contract
+}
+
+enum NotificationCreator {
+  Admin
+  Teacher
+  Student
+  Parent
+  System
+}
+
 // --- 1. USER MANAGEMENT ---
 model User {
   id       String  @id @default(cuid())
@@ -33,27 +60,48 @@ model User {
   password String
   role     Role
   email    String? @unique
+  imageURL String?
 
   // Profiles
   student Student?
   teacher Teacher?
 
+  // Notifications
+  notifications Notifications[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model SystemSetting {
+  key   String @id
+  value String
+}
+
 // --- 2. ACADEMIC HIERARCHY ---
 model Class {
-  id           String   @id @default(cuid())
-  name         String // e.g. "Grade 10"
-  capacity     Int
-  supervisorId String?
-  supervisor   Teacher? @relation("ClassSupervisor", fields: [supervisorId], references: [id])
+  id   String @id @default(cuid())
+  name String @unique // e.g. "Grade 10"
 
-  students      Student[]
+  sections      Section[]
+  students      Student[] // Direct relation for "All Grade 10 students"
   subjects      Subject[] // Subjects taught in this class
   events        Event[]
   feeStructures FeeStructure[]
+}
+
+model Section {
+  id   String @id @default(cuid())
+  name String // e.g. "A", "B"
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id])
+
+  classTeacherId String?
+  classTeacher   Teacher? @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+
+  students Student[]
+  capacity Int
 }
 
 model Subject {
@@ -75,7 +123,6 @@ model Teacher {
   fullName  String
   dob       DateTime
   gender    Gender
-  imageURL  String?
 
   // Contact Details
   contactNo String?
@@ -85,9 +132,9 @@ model Teacher {
   qualification String?
   experience    String?
 
-  subjects        Subject[]
-  supervisedClass Class[]             @relation("ClassSupervisor")
-  attendance      TeacherAttendance[]
+  subjects   Subject[]
+  sections   Section[]           @relation("ClassTeacher")
+  attendance TeacherAttendance[]
 }
 
 model Student {
@@ -98,14 +145,17 @@ model Student {
   classId String
   class   Class  @relation(fields: [classId], references: [id])
 
+  sectionId String?
+  section   Section? @relation(fields: [sectionId], references: [id])
+
   // Personal Details
   rollNo        String // Student ID - S-<rollNo>
-  admissionNo   String   @unique // Admission Number - ADM-<admissionNo>
+  admissionNo   String        @unique // Admission Number - ADM-<admissionNo>
   admissionDate DateTime
   fullName      String
   dob           DateTime
   gender        Gender
-  imageURL      String?
+  status        StudentStatus @default(ACTIVE)
 
   // Contact Details
   contactNo String?
@@ -166,6 +216,14 @@ enum TransactionType {
   CREDIT // Fee Paid (-)
 }
 
+enum StudentStatus {
+  ACTIVE
+  ON_LEAVE
+  DROPPED
+  GRADUATED
+  SUSPENDED
+}
+
 model Expense {
   id       String   @id @default(cuid())
   title    String
@@ -216,4 +274,18 @@ model Event {
   date    DateTime
   classId String?
   class   Class?   @relation(fields: [classId], references: [id])
+}
+
+model Notifications {
+  id          String              @id @unique @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  createdBy   NotificationCreator
+  senderImage String?
+  link        String?
+  type        NotificationType
+  isRead      Boolean             @default(false)
+  createdAt   DateTime            @default(now())
 }

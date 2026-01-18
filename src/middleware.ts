@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Teacher Routes
-    const teacherRoutes = ["/teacher", "/attendance"];
+    const teacherRoutes = ["/attendance"];
     // Note: /results is shared, so checking strictly teacher/attendance here
     if (
       teacherRoutes.some((path) => pathname.startsWith(path)) &&
@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Student Routes
-    const studentRoutes = ["/student", "/fees"];
+    const studentRoutes = ["/fees"];
     if (
       studentRoutes.some((path) => pathname.startsWith(path)) &&
       role !== "STUDENT"
