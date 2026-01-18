@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+// import { Gender, StudentStatus } from "@/generated/prisma/client";
 import { Loader2, Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -106,6 +107,19 @@ export default function NewStudentDialog() {
     });
   }, []);
 
+  // Fetch IDs when dialog opens
+  useEffect(() => {
+    if (open) {
+      startTransition(async () => {
+        const { admissionNo, rollNo } = await import("@/actions/student").then(
+          (mod) => mod.generateNextStudentIds(),
+        );
+        form.setValue("admissionNo", admissionNo);
+        form.setValue("rollNo", rollNo);
+      });
+    }
+  }, [open, form]);
+
   // Fetch sections when class changes
   const selectedClassId = form.watch("classId");
   useEffect(() => {
@@ -122,7 +136,12 @@ export default function NewStudentDialog() {
 
   const onSubmit = (values: StudentFormValues) => {
     startTransition(async () => {
-      const result = await createStudent(values);
+      const result = await createStudent({
+        ...values,
+        dob: values.dob.toISOString(),
+        admissionDate: values.admissionDate.toISOString(),
+        status: StudentStatus.ACTIVE,
+      });
       if (result.success) {
         toast.success("Student created successfully");
         setOpen(false);
@@ -405,7 +424,10 @@ export default function NewStudentDialog() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button
+        onClick={() => setOpen(true)}
+        className={`${isMobile ? "w-full" : ""}`}
+      >
         <Plus className='mr-2 h-4 w-4' /> Add Student
       </Button>
 

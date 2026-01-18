@@ -91,8 +91,9 @@ model Class {
 }
 
 model Section {
-  id   String @id @default(cuid())
-  name String // e.g. "A", "B"
+  id    String  @id @default(cuid())
+  name  String // e.g. "A", "B"
+  color String?
 
   classId String
   class   Class  @relation(fields: [classId], references: [id])
@@ -170,17 +171,19 @@ model Student {
   guardianRelation  String?
   guardianContactNo String?
 
-  account    StudentAccount?
-  attendance StudentAttendance[]
-  results    Result[]
+  account      StudentAccount?
+  attendance   StudentAttendance[]
+  results      Result[]
+  feeOverrides StudentFeeOverride[]
 }
 
 // --- 3. FINANCIAL LEDGER (Double-Entry Lite) ---
 model FeeHead {
-  id          String         @id @default(cuid())
+  id          String               @id @default(cuid())
   name        String // "Tuition", "Library", "Exam"
   description String?
   structures  FeeStructure[]
+  overrides   StudentFeeOverride[]
 }
 
 model FeeStructure {
@@ -191,6 +194,19 @@ model FeeStructure {
   feeHead   FeeHead @relation(fields: [feeHeadId], references: [id])
   amount    Float
   dueDate   String? // e.g. "5th of month"
+}
+
+model StudentFeeOverride {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  feeHeadId String
+  feeHead   FeeHead @relation(fields: [feeHeadId], references: [id])
+
+  amount Float
+
+  @@unique([studentId, feeHeadId])
 }
 
 model StudentAccount {

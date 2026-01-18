@@ -254,4 +254,8 @@
   .textarea {
     @apply placeholder:text-muted-foreground/60! font-medium! md:text-base! text-sm! text-foreground! h-11! ring-offset-0! ring-0! focus-visible:ring-0! focus-visible:ring-offset-0! shadow-none! transition-all bg-transparent!;
   }
+
+  .select {
+    @apply h-11! rounded-lg! bg-transparent! border-primary-border!;
+  }
 }

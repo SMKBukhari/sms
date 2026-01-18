@@ -110,7 +110,7 @@ export function StudentTable({
             onValueChange={handleFilter}
             defaultValue={searchParams.get("status") || "ALL"}
           >
-            <SelectTrigger className='w-[130px] bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800'>
+            <SelectTrigger className='select'>
               <SelectValue placeholder='All Status' />
             </SelectTrigger>
             <SelectContent>
@@ -192,9 +192,9 @@ export function StudentTable({
                     >
                       <TableCell>
                         <div className='flex items-center gap-3'>
-                          <Avatar className='h-9 w-9 bg-pink-100/50'>
+                          <Avatar className='h-9 w-9 bg-primary-bg'>
                             <AvatarImage src={student.imageURL || ""} />
-                            <AvatarFallback className='bg-pink-100 text-pink-500 dark:bg-pink-900/30 font-medium'>
+                            <AvatarFallback className='bg-primary-bg font-medium'>
                               {student.fullName.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -203,7 +203,7 @@ export function StudentTable({
                               {student.fullName}
                             </p>
                             <p className='text-xs text-gray-400'>
-                              S-{student.rollNo}
+                              {student.rollNo}
                             </p>
                           </div>
                         </div>
