@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, StudentStatus, Gender } from "@/generated/prisma/client";
 import bcrypt from "bcryptjs";
+import { generateFeesForStudent } from "@/actions/fee-actions";
 
 export type StudentListFilter = {
   classId?: string;
@@ -339,6 +340,11 @@ export async function createStudent(formData: {
         timeout: 10000,
       },
     );
+
+    // 5. Trigger Automatic Fee Generation (Outside Transaction)
+    if (result && result.id) {
+      await generateFeesForStudent(result.id, "INITIAL_ADMISSION");
+    }
 
     return { success: true, data: result };
   } catch (error: any) {

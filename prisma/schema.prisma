@@ -175,6 +175,7 @@ model Student {
   attendance   StudentAttendance[]
   results      Result[]
   feeOverrides StudentFeeOverride[]
+  fees         StudentFee[]
 }
 
 // --- 3. FINANCIAL LEDGER (Double-Entry Lite) ---
@@ -182,8 +183,10 @@ model FeeHead {
   id          String               @id @default(cuid())
   name        String // "Tuition", "Library", "Exam"
   description String?
+  frequency   FeeFrequency         @default(MONTHLY)
   structures  FeeStructure[]
   overrides   StudentFeeOverride[]
+  fees        StudentFee[]
 }
 
 model FeeStructure {
@@ -225,6 +228,45 @@ model Transaction {
   type        TransactionType
   description String?
   date        DateTime        @default(now())
+
+  studentFeeId String?
+  studentFee   StudentFee? @relation(fields: [studentFeeId], references: [id])
+}
+
+model StudentFee {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  feeHeadId String
+  feeHead   FeeHead @relation(fields: [feeHeadId], references: [id])
+
+  amount     Float // Total amount due for this specific instance
+  paidAmount Float    @default(0)
+  dueDate    DateTime
+
+  month Int // 0-11 for Monthly, or current month for One-Time check
+  year  Int
+
+  status PaymentStatus @default(PENDING)
+
+  transactions Transaction[] // Payments made against this fee
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, feeHeadId, month, year]) // Prevent duplicate monthly generation
+}
+
+enum FeeFrequency {
+  ONE_TIME
+  MONTHLY
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
 }
 
 enum TransactionType {
